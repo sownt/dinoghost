@@ -65,7 +65,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:fontFamily="@font/poppins_bold"
-            android:text="@{String.valueOf(ProductViewModel.price)}"
+            android:text="@{ProductViewModel.price}"
             android:textColor="@color/black"
             android:textSize="20sp"
             app:layout_constraintEnd_toEndOf="@+id/product_type"

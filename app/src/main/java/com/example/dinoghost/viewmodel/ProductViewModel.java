@@ -25,7 +25,7 @@ public class ProductViewModel extends BaseObservable {
 
     @Bindable
     public String getCode() {
-        return code;
+        return String.format("Item No. %s", code);
     }
 
     public void setCode(String code) {
@@ -35,7 +35,7 @@ public class ProductViewModel extends BaseObservable {
 
     @Bindable
     public String getType() {
-        return type;
+        return String.format("Item Type: %s", type);
     }
 
     public void setType(String type) {
@@ -44,8 +44,8 @@ public class ProductViewModel extends BaseObservable {
     }
 
     @Bindable
-    public int getPrice() {
-        return price;
+    public String getPrice() {
+        return String.format("$%d", price);
     }
 
     public void setPrice(int price) {
