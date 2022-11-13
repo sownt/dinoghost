@@ -4,6 +4,8 @@ import android.app.ActivityOptions;
 import android.content.Intent;
 import android.os.Bundle;
 import android.transition.Slide;
+import android.util.Log;
+import android.view.View;
 import android.view.Window;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -19,6 +21,11 @@ import com.example.dinoghost.model.ProductResponse;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -29,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private ProductPagerAdapter pagerAdapter;
     private List<Product> products;
+    private Disposable disposable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,36 +45,50 @@ public class MainActivity extends AppCompatActivity {
 
         if (getSupportActionBar() != null) getSupportActionBar().hide();
 
-        pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), new ArrayList<>());
+        pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), products);
         binding.pager2.setAdapter(pagerAdapter);
+        binding.dotsIndicator.attachTo(binding.pager2);
+        setContentView(binding.getRoot());
 
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(Constants.API_ENDPOINT)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
+        DinoService.dino.getObservableProduct()
+                .subscribeOn(Schedulers.io())
+                        .observeOn(AndroidSchedulers.mainThread())
+                                .subscribe(new Observer<ProductResponse>() {
+                                    @Override
+                                    public void onSubscribe(@NonNull Disposable d) {
+                                        disposable = d;
+                                    }
 
-        DinoService service = retrofit.create(DinoService.class);
+                                    @Override
+                                    public void onNext(@NonNull ProductResponse productResponse) {
+                                        products = productResponse.getData();
+                                    }
 
-        Call<ProductResponse> getProductList = service.getProductList();
-        getProductList.enqueue(new Callback<ProductResponse>() {
-            @Override
-            public void onResponse(Call<ProductResponse> call, Response<ProductResponse> response) {
-                products = response.body().getData();
-                pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), products);
-                binding.pager2.setAdapter(pagerAdapter);
-                binding.dotsIndicator.attachTo(binding.pager2);
-                setContentView(binding.getRoot());
-            }
+                                    @Override
+                                    public void onError(@NonNull Throwable e) {
+                                        Log.e("Call API", e.getMessage(), e);
+                                    }
 
-            @Override
-            public void onFailure(Call<ProductResponse> call, Throwable t) {
-
-            }
-        });
+                                    @Override
+                                    public void onComplete() {
+                                        pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), products);
+                                        binding.pager2.setAdapter(pagerAdapter);
+                                        binding.dotsIndicator.attachTo(binding.pager2);
+                                        binding.shimmer.stopShimmer();
+                                        binding.shimmer.setVisibility(View.INVISIBLE);
+                                        binding.layoutMain.setVisibility(View.VISIBLE);
+                                    }
+                                });
 
         binding.cart.setOnClickListener(v -> {
             startActivity(new Intent(this, CartActivity.class),
                     ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
         });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (disposable != null) disposable.dispose();
     }
 }
