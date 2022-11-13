@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.transition.Slide;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -73,6 +74,9 @@ public class MainActivity extends AppCompatActivity {
                                         pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), products);
                                         binding.pager2.setAdapter(pagerAdapter);
                                         binding.dotsIndicator.attachTo(binding.pager2);
+                                        binding.shimmer.stopShimmer();
+                                        binding.shimmer.setVisibility(View.INVISIBLE);
+                                        binding.layoutMain.setVisibility(View.VISIBLE);
                                     }
                                 });
 
