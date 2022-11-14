@@ -1,6 +1,6 @@
 # DinoGhost Mobile
 
-- Home Screen
+- [ ] Home Screen
 - [x] Cart Screen
 - [ ] Checkout Screen (completed UI)
 - [x] GET data from REST API
