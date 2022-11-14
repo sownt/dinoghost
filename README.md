@@ -1,4 +1,8 @@
 # DinoGhost Mobile
+![Release](https://img.shields.io/github/v/release/sownt/dinoghost?include_prereleases&style=for-the-badge)
+![Build](https://img.shields.io/github/workflow/status/sownt/dinoghost/Android%20CI?style=for-the-badge)
+![GitHub issues](https://img.shields.io/github/issues/sownt/dinoghost?style=for-the-badge)
+
 Hiện ứng dụng đã hoàn thành phần lớn, các lỗi và vấn đề gặp phải sẽ đươc cập nhật lên mục [Issues](https://github.com/sownt/dinoghost/issues).
 
 ## Tiến độ
