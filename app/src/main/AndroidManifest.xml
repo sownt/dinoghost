@@ -13,7 +13,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.DinoGhost"
         tools:targetApi="31">
+        <activity android:name=".ui.CheckoutActivity" />
         <activity android:name=".ui.CartActivity" />
+        <activity android:name=".ui.ShippingActivity" />
         <activity
             android:name=".ui.MainActivity"
             android:exported="true">

@@ -1,6 +1,7 @@
 # DinoGhost Mobile
-- [x] Home Screen
-- [ ] Cart Screen
-- [ ] Checkout Screen
-- [ ] GET data from REST API (partial completed)
-- [ ] POST order
+
+- Home Screen
+- [x] Cart Screen
+- [ ] Checkout Screen (completed UI)
+- [x] GET data from REST API
+- [ ] POST order (invalid body request, need help)
