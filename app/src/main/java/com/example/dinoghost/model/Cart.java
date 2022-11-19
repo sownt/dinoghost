@@ -1,6 +1,7 @@
 package com.example.dinoghost.model;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import java.util.Objects;
@@ -72,6 +73,14 @@ public class Cart {
         this.quantity = quantity;
     }
 
+    public void increaseQuantity() {
+        this.quantity++;
+    }
+
+    public void decreaseQuantity() {
+        this.quantity--;
+    }
+
     public Cart(Product product) {
         this(product, 1);
     }
@@ -89,7 +98,13 @@ public class Cart {
         this.quantity = quantity;
     }
 
+    @Ignore
     public Cart() {
+    }
+
+    public boolean same(Product o) {
+        Cart cart = new Cart(o, getQuantity());
+        return equals(cart);
     }
 
     @Override
@@ -97,11 +112,11 @@ public class Cart {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Cart cart = (Cart) o;
-        return price == cart.price && name.equals(cart.name) && Objects.equals(type, cart.type) && code.equals(cart.code) && Objects.equals(image, cart.image);
+        return quantity == cart.quantity && Objects.equals(code, cart.code);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, type, code, price, image);
+        return Objects.hash(code, quantity);
     }
 }

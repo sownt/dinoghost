@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
-    <data>
-        <variable
-            name="Cart"
-            type="com.example.dinoghost.viewmodel.CartViewModel" />
-    </data>
-
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
@@ -21,7 +15,6 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="32dp"
                 android:fontFamily="@font/poppins_semibold"
-                android:text="@{Cart.title}"
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 app:layout_constraintBottom_toBottomOf="@+id/cart_dismiss"
@@ -103,7 +96,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:fontFamily="@font/poppins_semibold"
-                        android:text="@{Cart.price}"
                         android:textColor="@color/black" />
 
                 </LinearLayout>

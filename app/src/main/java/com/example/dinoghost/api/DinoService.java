@@ -1,15 +1,11 @@
 package com.example.dinoghost.api;
 
 import com.example.dinoghost.Constants;
-import com.example.dinoghost.model.OrderRequest;
-import com.example.dinoghost.model.OrderResponse;
-import com.example.dinoghost.model.Product;
-import com.example.dinoghost.model.ProductResponse;
-
-import java.util.List;
+import com.example.dinoghost.model.response.Order;
+import com.example.dinoghost.model.response.Product;
 
 import io.reactivex.rxjava3.core.Observable;
-import retrofit2.Call;
+import io.reactivex.rxjava3.core.Single;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
@@ -26,8 +22,8 @@ public interface DinoService {
             .create(DinoService.class);
 
     @GET("/products")
-    Observable<ProductResponse> getObservableProduct();
+    Single<Product> getObservableProduct();
 
-    @POST("/purchase")
-    Call<OrderResponse> purchase(@Body OrderRequest request);
+    @POST("/product/purchase")
+    Single<Order> purchase(@Body com.example.dinoghost.model.request.Order request);
 }
