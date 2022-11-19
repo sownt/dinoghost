@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Gravity;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Toast;
 
@@ -13,28 +12,30 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.dinoghost.R;
 import com.example.dinoghost.adapter.ProductPagerAdapter;
 import com.example.dinoghost.api.DinoService;
-import com.example.dinoghost.data.Repository;
+import com.example.dinoghost.data.local.CartDataSource;
 import com.example.dinoghost.data.local.CartDatabase;
 import com.example.dinoghost.databinding.ActivityMainBinding;
 import com.example.dinoghost.model.Cart;
 import com.example.dinoghost.model.Product;
-import com.example.dinoghost.model.ProductResponse;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.Observer;
+import io.reactivex.rxjava3.core.SingleObserver;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
     private ActivityMainBinding binding;
     private ProductPagerAdapter pagerAdapter;
-    private List<Product> products;
-    private List<Cart> cartList;
-    private Disposable disposable;
-    private CartDatabase db;
+
+    private List<Product> productList;
+    private CartDataSource cartList;
+
+    private List<Disposable> disposableList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,126 +45,129 @@ public class MainActivity extends AppCompatActivity {
 
         if (getSupportActionBar() != null) getSupportActionBar().hide();
 
-        setBinding();
-        getData();
-        setListener();
-    }
-
-    private void setBinding() {
-        pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), products);
-        binding.pager2.setAdapter(pagerAdapter);
-        binding.dotsIndicator.attachTo(binding.pager2);
-    }
-
-    private void getData() {
-        // Get products from API
-        DinoService.dino.getObservableProduct()
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<ProductResponse>() {
-                    @Override
-                    public void onSubscribe(@NonNull Disposable d) {
-                        disposable = d;
-                    }
-
-                    @Override
-                    public void onNext(@NonNull ProductResponse productResponse) {
-                        products = productResponse.getData();
-                    }
-
-                    @Override
-                    public void onError(@NonNull Throwable e) {
-                        Log.e("Call API", e.getMessage(), e);
-                    }
-
-                    @Override
-                    public void onComplete() {
-                        pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), products);
-                        binding.pager2.setAdapter(pagerAdapter);
-                        binding.dotsIndicator.attachTo(binding.pager2);
-                        binding.shimmer.stopShimmer();
-                        binding.shimmer.setVisibility(View.INVISIBLE);
-                        binding.layoutMain.setVisibility(View.VISIBLE);
-                    }
-                });
-
-        // Get cart data from Database
-        db = Repository.getCartDb(this);
-        cartList = db.cartDao().loadCart();
-        updateBadgeNumber();
-    }
-
-    private void setListener() {
-        binding.cart.setOnClickListener(v -> {
-            startActivity(new Intent(MainActivity.this, CartActivity.class));
-        });
-
-        binding.button.setOnClickListener(v -> {
-            buyItem(binding.pager2.getCurrentItem());
-            updateBadgeNumber();
-        });
-    }
-
-    private void buyItem(int currentItem) {
-        if (products == null || products.size() <= currentItem || cartList == null) return;
-        Cart newItem = new Cart(products.get(currentItem));
-        for (int i = 0; i < cartList.size(); i++) {
-            Cart c = cartList.get(i);
-            if (c.equals(newItem)) {
-                newItem.setId(c.getId());
-                newItem.setQuantity(c.getQuantity() + 1);
-                cartList.set(i, newItem);
-                cartAdded();
-                return;
-            }
-        }
-        cartList.add(newItem);
-        db.cartDao().insert(newItem);
-        cartAdded();
-    }
-
-    private void updateBadgeNumber() {
-        if (cartList == null || cartList.size() == 0) {
-            binding.cartBadge.setVisibility(View.GONE);
-            return;
-        }
-        int cartSize = 0;
-        for (Cart c : cartList) cartSize += c.getQuantity();
-        binding.cartBadge.setVisibility(View.VISIBLE);
-        binding.cartBadge.setText(String.valueOf(cartSize));
-    }
-
-    private void cartAdded() {
-        View view = getLayoutInflater().inflate(R.layout.toast_notification, findViewById(R.id.toast_root));
-        Toast toast = new Toast(this);
-        toast.setView(view);
-        toast.setDuration(Toast.LENGTH_SHORT);
-        toast.setGravity(Gravity.TOP, 0, 64);
-        toast.show();
-    }
-
-    private void saveData() {
-        for (Cart c : cartList) {
-            db.cartDao().update(c);
-        }
+        bind();
+        fetchData();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        cartList = db.cartDao().loadCart();
-        updateBadgeNumber();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        saveData();
+        notifyCartChanged();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (disposable != null) disposable.dispose();
+        for (Cart cart : cartList) {
+            CartDatabase.getInstance(this.getApplicationContext()).cartDao().insert(cart)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe();
+        }
+        for (Disposable d : disposableList) d.dispose();
+    }
+
+    private void bind() {
+        pagerAdapter = new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), productList);
+        cartList = CartDataSource.getInstance();
+        binding.pager2.setAdapter(pagerAdapter);
+        binding.dotsIndicator.attachTo(binding.pager2);
+        binding.cart.setOnClickListener(v -> {
+            startActivity(new Intent(MainActivity.this, CartActivity.class));
+        });
+        binding.button.setOnClickListener(v -> {
+            addToCart(productList.get(binding.pager2.getCurrentItem()));
+        });
+    }
+
+    private void fetchData() {
+        fetchProducts();
+        fetchCart();
+    }
+
+    private void fetchProducts() {
+        binding.shimmer.setVisibility(View.VISIBLE);
+        binding.layoutMain.setVisibility(View.GONE);
+        // Get products from API
+        DinoService.dino.getObservableProduct()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new SingleObserver<com.example.dinoghost.model.response.Product>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+                        disposableList.add(d);
+                    }
+
+                    @Override
+                    public void onSuccess(com.example.dinoghost.model.response.@NonNull Product product) {
+                        productList = Arrays.asList(product.getData());
+                        binding.shimmer.setVisibility(View.GONE);
+                        binding.layoutMain.setVisibility(View.VISIBLE);
+                        binding.pager2.setAdapter(new ProductPagerAdapter(getSupportFragmentManager(), getLifecycle(), productList));
+                        binding.dotsIndicator.attachTo(binding.pager2);
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+                        Log.e("Fetch Products", e.getMessage(), e);
+                    }
+                });
+    }
+
+    private void fetchCart() {
+        // Get cart data from Database
+        cartList.clear();
+        CartDatabase.getInstance(this.getApplicationContext()).cartDao().select()
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new SingleObserver<List<Cart>>() {
+                    @Override
+                    public void onSubscribe(@NonNull Disposable d) {
+                        disposableList.add(d);
+                    }
+
+                    @Override
+                    public void onSuccess(@NonNull List<Cart> carts) {
+                        cartList.addAll(carts);
+                        notifyCartChanged();
+                    }
+
+                    @Override
+                    public void onError(@NonNull Throwable e) {
+                        Log.e("Fetch Cart", e.getMessage(), e);
+                    }
+                });
+    }
+
+    private void addToCart(Product product) {
+        for (int i = 0; i < cartList.size(); i++) {
+            if (cartList.get(i).same(product)) {
+                cartList.get(i).increaseQuantity();
+                notifyCartChanged();
+                showToast();
+                return;
+            }
+        }
+        cartList.add(new Cart(product));
+        notifyCartChanged();
+        showToast();
+    }
+
+    private void notifyCartChanged() {
+        int size = cartList.getSize();
+        if (size == 0) {
+            binding.cartBadge.setVisibility(View.GONE);
+        } else {
+            binding.cartBadge.setVisibility(View.VISIBLE);
+            binding.cartBadge.setText(String.valueOf(size));
+        }
+    }
+
+    private void showToast() {
+        View view = getLayoutInflater().inflate(R.layout.toast_notification, findViewById(R.id.toast_root));
+        Toast toast = new Toast(this);
+        toast.setView(view);
+        toast.setDuration(Toast.LENGTH_SHORT);
+        toast.setGravity(Gravity.TOP, 0, 128);
+        toast.show();
     }
 }
