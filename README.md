@@ -3,14 +3,12 @@
 ![Build](https://img.shields.io/github/workflow/status/sownt/dinoghost/Android%20CI?style=for-the-badge)
 ![GitHub issues](https://img.shields.io/github/issues/sownt/dinoghost?style=for-the-badge)
 
-Hiện ứng dụng đã hoàn thành phần lớn, các lỗi và vấn đề gặp phải sẽ đươc cập nhật lên mục [Issues](https://github.com/sownt/dinoghost/issues).
-
 ## Tiến độ
 - [x] Home Screen
 - [x] Cart Screen
-- [ ] Checkout Screen (completed UI)
+- [x] Checkout Screen (completed UI)
 - [x] GET data from REST API
-- [ ] POST order (invalid body request, need help)
+- [x] POST order (invalid body request, need help)
 - [x] Room Database Implements
 
 ## Kiến trúc
